@@ -1,0 +1,1 @@
+import{F as e}from"./cards-view-D1r0IGsl.js";import{d as o,c as r,b as t}from"./main-_0WdI2da.js";import"./mermaid-graph.vue_vue_type_style_index_0_lang-DC8uaBcZ.js";import"./_commonjsHelpers-Cpj98o6Y.js";const _=o({__name:"home-page",setup(a){return(p,s)=>(t(),r(e,{onlyFavorites:!0}))}});export{_ as default};
