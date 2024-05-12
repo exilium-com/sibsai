@@ -1,0 +1,53 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    # main is "production", test is "preview" in Cloudflare
+    branches: ["main", "test"]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Release and Deployment
+    runs-on: ubuntu-latest
+    env:
+      DEPLOYMENT_TYPE: ${{ github.ref_name == 'main' && 'production' || 'preview' }}
+    permissions:
+      contents: write # needed to create release
+      deployments: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Prep Vars
+        run: |
+          git fetch --tags
+          export TAG=$(git log --tags --max-count=1 --format="%(describe:abbrev=0)")
+          echo "VERSION=${TAG#v}" >> $GITHUB_ENV
+      - name: Create and Publish GitHub Release
+        uses: softprops/action-gh-release@v2.0.4
+        id: create_release
+        with:
+          tag_name: v${{ env.VERSION }}
+          name: Build v${{ env.VERSION }}
+          body: |
+              ${{ env.DEPLOYMENT_TYPE }} build v${{ env.VERSION }} created from ${{ github.ref }} @${{ github.sha }}
+          prerelease: false
+
+      - name: Publish to Cloudflare Pages
+        id: publish
+        uses: cloudflare/pages-action@v1.5.0
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: 3100a6223762be291d2adab89520916f
+          projectName: companion
+          directory: public
+          branch: ${{ github.ref_name}}
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+      - name: Outputs
+        run: |
+          echo "## Build ${{ env.VERSION }} Deployed to Cloudflare - ${{ steps.publish.outputs.environment }}" >> $GITHUB_STEP_SUMMARY
+          echo "Environment: " >> $GITHUB_STEP_SUMMARY
+          echo "URL: ${{ steps.publish.outputs.url }}" >> $GITHUB_STEP_SUMMARY
+          echo "ID: ${{ steps.publish.outputs.id }}" >> $GITHUB_STEP_SUMMARY
+          echo "Alias: ${{ steps.publish.outputs.alias }}" >> $GITHUB_STEP_SUMMARY
